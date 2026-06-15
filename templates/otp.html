@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}Verify OTP{% endblock %}
+
+{% block body %}
+<div class="min-h-screen flex items-center justify-center px-4">
+    <div class="absolute inset-0 bg-gradient-to-br from-surface-950 via-navy-950 to-surface-950"></div>
+
+    <div class="relative z-10 w-full max-w-md">
+        <a href="/login" class="inline-flex items-center gap-2 text-sm text-surface-200/60 hover:text-white mb-8 transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            Back to Login
+        </a>
+
+        <div class="glass rounded-2xl p-8 animate-in">
+            <!-- Lock icon -->
+            <div class="w-16 h-16 rounded-2xl bg-navy-700/30 border border-navy-600/30 flex items-center justify-center mx-auto mb-6">
+                <svg class="w-8 h-8 text-navy-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+            </div>
+
+            <h2 class="text-2xl font-bold text-white text-center mb-2">Verify OTP</h2>
+            <p class="text-sm text-surface-200/60 text-center mb-8">
+                Enter the 6-digit code sent to<br>
+                <span class="text-navy-300 font-medium">{{ email }}</span>
+            </p>
+
+            <form id="otp-form" class="space-y-5">
+                <div class="flex justify-center gap-3" id="otp-inputs">
+                    <input type="text" maxlength="1" class="w-12 h-14 text-center text-xl font-bold rounded-lg bg-surface-900/80 border border-surface-800 text-white focus:outline-none focus:border-navy-500 focus:ring-1 focus:ring-navy-500 transition-colors" data-idx="0">
+                    <input type="text" maxlength="1" class="w-12 h-14 text-center text-xl font-bold rounded-lg bg-surface-900/80 border border-surface-800 text-white focus:outline-none focus:border-navy-500 focus:ring-1 focus:ring-navy-500 transition-colors" data-idx="1">
+                    <input type="text" maxlength="1" class="w-12 h-14 text-center text-xl font-bold rounded-lg bg-surface-900/80 border border-surface-800 text-white focus:outline-none focus:border-navy-500 focus:ring-1 focus:ring-navy-500 transition-colors" data-idx="2">
+                    <input type="text" maxlength="1" class="w-12 h-14 text-center text-xl font-bold rounded-lg bg-surface-900/80 border border-surface-800 text-white focus:outline-none focus:border-navy-500 focus:ring-1 focus:ring-navy-500 transition-colors" data-idx="3">
+                    <input type="text" maxlength="1" class="w-12 h-14 text-center text-xl font-bold rounded-lg bg-surface-900/80 border border-surface-800 text-white focus:outline-none focus:border-navy-500 focus:ring-1 focus:ring-navy-500 transition-colors" data-idx="4">
+                    <input type="text" maxlength="1" class="w-12 h-14 text-center text-xl font-bold rounded-lg bg-surface-900/80 border border-surface-800 text-white focus:outline-none focus:border-navy-500 focus:ring-1 focus:ring-navy-500 transition-colors" data-idx="5">
+                </div>
+
+                <button
+                    type="submit"
+                    id="verify-btn"
+                    class="w-full py-3 rounded-lg bg-navy-700 text-white font-semibold hover:bg-navy-600 transition-all glow-blue disabled:opacity-50"
+                >
+                    Verify & Login
+                </button>
+            </form>
+
+            <div class="mt-6 text-center">
+                <p class="text-sm text-surface-200/50 mb-2">Didn't receive the code?</p>
+                <button id="resend-btn" class="text-sm text-navy-300 hover:text-navy-200 font-medium transition-colors">
+                    Resend OTP
+                </button>
+            </div>
+
+            <div class="mt-4 p-3 rounded-lg bg-signal-amber/5 border border-signal-amber/20">
+                <p class="text-xs text-signal-amber/80 text-center">Check your terminal/console for the OTP code (development mode)</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const inputs = document.querySelectorAll('#otp-inputs input');
+    const otpForm = document.getElementById('otp-form');
+    const verifyBtn = document.getElementById('verify-btn');
+    const resendBtn = document.getElementById('resend-btn');
+
+    // Auto-focus and auto-advance OTP inputs
+    inputs.forEach((input, idx) => {
+        input.addEventListener('input', (e) => {
+            const val = e.target.value;
+            if (val && idx < inputs.length - 1) {
+                inputs[idx + 1].focus();
+            }
+        });
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Backspace' && !input.value && idx > 0) {
+                inputs[idx - 1].focus();
+            }
+        });
+        input.addEventListener('paste', (e) => {
+            e.preventDefault();
+            const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+            pasted.split('').forEach((ch, i) => {
+                if (inputs[i]) inputs[i].value = ch;
+            });
+            if (pasted.length === 6) inputs[5].focus();
+        });
+    });
+    inputs[0].focus();
+
+    function getOTP() {
+        return Array.from(inputs).map(i => i.value).join('');
+    }
+
+    otpForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const otp = getOTP();
+        if (otp.length !== 6) {
+            showToast('Please enter the complete 6-digit OTP', 'error');
+            return;
+        }
+
+        verifyBtn.disabled = true;
+        verifyBtn.textContent = 'Verifying...';
+
+        try {
+            const data = await apiCall('/api/auth/verify-otp', {
+                method: 'POST',
+                body: JSON.stringify({ otp })
+            });
+            showToast('Login successful!', 'success');
+            window.location.href = data.redirect || '/dashboard';
+        } catch (err) {
+            verifyBtn.disabled = false;
+            verifyBtn.textContent = 'Verify & Login';
+            inputs.forEach(i => i.value = '');
+            inputs[0].focus();
+        }
+    });
+
+    resendBtn.addEventListener('click', async () => {
+        resendBtn.disabled = true;
+        resendBtn.textContent = 'Sending...';
+        try {
+            await apiCall('/api/auth/resend-otp', { method: 'POST' });
+            showToast('OTP resent! Check your console.', 'success');
+        } catch (err) {}
+        resendBtn.disabled = false;
+        resendBtn.textContent = 'Resend OTP';
+    });
+</script>
+{% endblock %}

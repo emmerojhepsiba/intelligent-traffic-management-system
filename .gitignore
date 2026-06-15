@@ -1,0 +1,17 @@
+venv/
+__pycache__/
+*.pyc
+.env
+
+runs/
+.cache/
+
+*.pt
+emergency.pt
+emergency_backup.pt
+yolov8n.pt
+yolov8s.pt
+
+models/ambulance_retrain/
+
+.DS_Store

@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+
+{% block body %}
+<!-- Navigation -->
+<nav class="fixed top-0 left-0 right-0 z-50 glass">
+    <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-lg bg-navy-700 flex items-center justify-center glow-blue">
+                <svg class="w-5 h-5 text-navy-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
+                </svg>
+            </div>
+            <span class="text-lg font-bold text-white tracking-tight">TrafficCommand</span>
+        </div>
+        <div class="hidden md:flex items-center gap-8">
+            <a href="#features" class="text-sm text-surface-200 hover:text-white transition-colors">Features</a>
+            <a href="#how-it-works" class="text-sm text-surface-200 hover:text-white transition-colors">How It Works</a>
+            <a href="/search" class="text-sm text-surface-200 hover:text-white transition-colors">Traffic Search</a>
+            <a href="/login" class="px-5 py-2 rounded-lg bg-navy-700 text-white text-sm font-semibold hover:bg-navy-600 transition-colors glow-blue">
+                Admin Login
+            </a>
+        </div>
+        <!-- Mobile menu button -->
+        <button id="mobile-menu-btn" class="md:hidden text-white">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+    </div>
+    <!-- Mobile menu -->
+    <div id="mobile-menu" class="hidden md:hidden px-6 pb-4 space-y-2">
+        <a href="#features" class="block py-2 text-sm text-surface-200 hover:text-white">Features</a>
+        <a href="#how-it-works" class="block py-2 text-sm text-surface-200 hover:text-white">How It Works</a>
+        <a href="/search" class="block py-2 text-sm text-surface-200 hover:text-white">Traffic Search</a>
+        <a href="/login" class="block py-2 text-sm text-navy-300 font-semibold">Admin Login</a>
+    </div>
+</nav>
+
+<!-- Hero Section -->
+<section class="relative min-h-screen flex items-center overflow-hidden">
+    <!-- Background -->
+    <div class="absolute inset-0">
+        <img src="/static/images/traffic-hero.png" alt="Smart traffic management" class="w-full h-full object-cover opacity-30">
+        <div class="absolute inset-0 bg-gradient-to-b from-surface-950/80 via-surface-950/60 to-surface-950"></div>
+    </div>
+
+    <div class="relative z-10 max-w-7xl mx-auto px-6 pt-24 pb-16">
+        <div class="max-w-3xl">
+            <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-navy-900/60 border border-navy-700/50 mb-8 animate-in">
+                <span class="w-2 h-2 rounded-full bg-signal-green pulse-dot"></span>
+                <span class="text-xs font-medium text-navy-200">Real-Time Traffic Intelligence</span>
+            </div>
+
+            <h1 class="text-5xl md:text-7xl font-extrabold text-white leading-[1.1] mb-6 animate-in" style="animation-delay:0.1s">
+                Smart Traffic
+                <span class="gradient-text"> Management</span>
+                System
+            </h1>
+
+            <p class="text-lg md:text-xl text-surface-200 leading-relaxed mb-10 max-w-2xl animate-in" style="animation-delay:0.2s">
+                AI-powered vehicle detection, real-time traffic monitoring, emergency vehicle priority routing, and intelligent traffic signal control — all in one unified command center.
+            </p>
+
+            <div class="flex flex-wrap gap-4 animate-in" style="animation-delay:0.3s">
+                <a href="/search" class="px-8 py-3.5 rounded-lg bg-navy-700 text-white font-semibold hover:bg-navy-600 transition-all glow-blue">
+                    Check Traffic Now
+                </a>
+                <a href="/login" class="px-8 py-3.5 rounded-lg border border-surface-200/20 text-white font-semibold hover:bg-white/5 transition-all">
+                    Admin Dashboard
+                </a>
+            </div>
+        </div>
+
+        <!-- Stats bar -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-20 animate-in" style="animation-delay:0.4s">
+            <div class="glass rounded-xl p-5 card-hover">
+                <p class="text-3xl font-bold text-white">24/7</p>
+                <p class="text-sm text-surface-200 mt-1">Real-Time Monitoring</p>
+            </div>
+            <div class="glass rounded-xl p-5 card-hover">
+                <p class="text-3xl font-bold text-white">YOLOv8</p>
+                <p class="text-sm text-surface-200 mt-1">AI Vehicle Detection</p>
+            </div>
+            <div class="glass rounded-xl p-5 card-hover">
+                <p class="text-3xl font-bold text-white">&lt;2s</p>
+                <p class="text-sm text-surface-200 mt-1">Emergency Response</p>
+            </div>
+            <div class="glass rounded-xl p-5 card-hover">
+                <p class="text-3xl font-bold text-white">Smart</p>
+                <p class="text-sm text-surface-200 mt-1">Route Optimization</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section id="features" class="py-24 px-6">
+    <div class="max-w-7xl mx-auto">
+        <div class="text-center mb-16">
+            <h2 class="text-3xl md:text-4xl font-bold text-white mb-4">Comprehensive Traffic Intelligence</h2>
+            <p class="text-surface-200 text-lg max-w-2xl mx-auto">Everything you need to monitor, manage, and optimize urban traffic flow in one powerful platform.</p>
+        </div>
+
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Feature 1 -->
+            <div class="glass rounded-2xl p-8 card-hover">
+                <div class="w-12 h-12 rounded-xl bg-navy-900/80 flex items-center justify-center mb-5 glow-blue">
+                    <svg class="w-6 h-6 text-navy-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                </div>
+                <h3 class="text-xl font-semibold text-white mb-3">Live Traffic Feeds</h3>
+                <p class="text-surface-200 leading-relaxed">Monitor traffic in real-time through uploaded images, video feeds, or your laptop webcam with instant AI analysis.</p>
+            </div>
+
+            <!-- Feature 2 -->
+            <div class="glass rounded-2xl p-8 card-hover">
+                <div class="w-12 h-12 rounded-xl bg-signal-green/10 flex items-center justify-center mb-5 glow-green">
+                    <svg class="w-6 h-6 text-signal-green" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/></svg>
+                </div>
+                <h3 class="text-xl font-semibold text-white mb-3">AI Vehicle Detection</h3>
+                <p class="text-surface-200 leading-relaxed">YOLOv8-powered detection that counts cars, bikes, buses, and trucks with bounding box visualization and density classification.</p>
+            </div>
+
+            <!-- Feature 3 -->
+            <div class="glass rounded-2xl p-8 card-hover">
+                <div class="w-12 h-12 rounded-xl bg-signal-red/10 flex items-center justify-center mb-5 glow-red">
+                    <svg class="w-6 h-6 text-signal-red" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+                </div>
+                <h3 class="text-xl font-semibold text-white mb-3">Emergency Priority</h3>
+                <p class="text-surface-200 leading-relaxed">Automatic detection of ambulances, fire trucks, and police vehicles with instant alert notifications and signal override.</p>
+            </div>
+
+            <!-- Feature 4 -->
+            <div class="glass rounded-2xl p-8 card-hover">
+                <div class="w-12 h-12 rounded-xl bg-signal-amber/10 flex items-center justify-center mb-5 glow-amber">
+                    <svg class="w-6 h-6 text-signal-amber" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                </div>
+                <h3 class="text-xl font-semibold text-white mb-3">Signal Control</h3>
+                <p class="text-surface-200 leading-relaxed">Manual traffic signal simulation for traffic police to control intersection signals and manage traffic flow in real-time.</p>
+            </div>
+
+            <!-- Feature 5 -->
+            <div class="glass rounded-2xl p-8 card-hover">
+                <div class="w-12 h-12 rounded-xl bg-navy-900/80 flex items-center justify-center mb-5 glow-blue">
+                    <svg class="w-6 h-6 text-navy-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
+                </div>
+                <h3 class="text-xl font-semibold text-white mb-3">Smart Routing</h3>
+                <p class="text-surface-200 leading-relaxed">Public traffic search with density prediction, alternate route suggestions, and integrated map navigation with real distances.</p>
+            </div>
+
+            <!-- Feature 6 -->
+            <div class="glass rounded-2xl p-8 card-hover">
+                <div class="w-12 h-12 rounded-xl bg-signal-green/10 flex items-center justify-center mb-5 glow-green">
+                    <svg class="w-6 h-6 text-signal-green" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                </div>
+                <h3 class="text-xl font-semibold text-white mb-3">Analytics & Logs</h3>
+                <p class="text-surface-200 leading-relaxed">Complete traffic event history, detection logs, incident tracking, and performance analytics for data-driven decisions.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- How It Works -->
+<section id="how-it-works" class="py-24 px-6 border-t border-surface-800">
+    <div class="max-w-7xl mx-auto">
+        <div class="text-center mb-16">
+            <h2 class="text-3xl md:text-4xl font-bold text-white mb-4">How It Works</h2>
+            <p class="text-surface-200 text-lg">Three simple modules working together for complete traffic management.</p>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-8">
+            <div class="text-center">
+                <div class="w-16 h-16 rounded-2xl bg-navy-700/50 border border-navy-600 flex items-center justify-center mx-auto mb-6 text-2xl font-bold text-navy-300">1</div>
+                <h3 class="text-xl font-semibold text-white mb-3">Upload & Detect</h3>
+                <p class="text-surface-200">Traffic police upload images, videos, or stream webcam feeds. YOLOv8 AI analyzes the footage in real-time to detect and count vehicles.</p>
+            </div>
+            <div class="text-center">
+                <div class="w-16 h-16 rounded-2xl bg-signal-green/10 border border-signal-green/30 flex items-center justify-center mx-auto mb-6 text-2xl font-bold text-signal-green">2</div>
+                <h3 class="text-xl font-semibold text-white mb-3">Monitor & Respond</h3>
+                <p class="text-surface-200">Dashboard shows live detection results, traffic density, and emergency alerts. Officers can control traffic signals and manage incidents instantly.</p>
+            </div>
+            <div class="text-center">
+                <div class="w-16 h-16 rounded-2xl bg-signal-amber/10 border border-signal-amber/30 flex items-center justify-center mx-auto mb-6 text-2xl font-bold text-signal-amber">3</div>
+                <h3 class="text-xl font-semibold text-white mb-3">Public Access</h3>
+                <p class="text-surface-200">Citizens search traffic conditions by location, get density predictions based on time and historical data, and receive smart alternate route suggestions.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA -->
+<section class="py-20 px-6 border-t border-surface-800">
+    <div class="max-w-4xl mx-auto text-center">
+        <h2 class="text-3xl md:text-4xl font-bold text-white mb-6">Ready to manage traffic smarter?</h2>
+        <p class="text-surface-200 text-lg mb-10">Access real-time traffic data or log in to the admin command center.</p>
+        <div class="flex flex-wrap justify-center gap-4">
+            <a href="/search" class="px-8 py-3.5 rounded-lg bg-navy-700 text-white font-semibold hover:bg-navy-600 transition-all glow-blue">
+                Search Traffic
+            </a>
+            <a href="/login" class="px-8 py-3.5 rounded-lg border border-surface-200/20 text-white font-semibold hover:bg-white/5 transition-all">
+                Admin Login
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- Footer -->
+<footer class="border-t border-surface-800 py-8 px-6">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+        <div class="flex items-center gap-2">
+            <div class="w-7 h-7 rounded-md bg-navy-700 flex items-center justify-center">
+                <svg class="w-4 h-4 text-navy-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
+            </div>
+            <span class="text-sm font-semibold text-surface-200">TrafficCommand</span>
+        </div>
+        <p class="text-sm text-surface-200/60">Smart Traffic Management System &mdash; AI-Powered Urban Mobility</p>
+    </div>
+</footer>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.getElementById('mobile-menu-btn').addEventListener('click', () => {
+        document.getElementById('mobile-menu').classList.toggle('hidden');
+    });
+</script>
+{% endblock %}

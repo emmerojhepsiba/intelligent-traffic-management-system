@@ -1,0 +1,987 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block extra_styles %}
+.sidebar-link { display:flex; align-items:center; gap:12px; padding:10px 14px; border-radius:8px; font-size:13px; font-weight:500; color:rgba(148,163,184,0.8); transition:all 0.2s; }
+.sidebar-link:hover { background:rgba(66,99,235,0.1); color:#bac8ff; }
+.sidebar-link.active { background:rgba(66,99,235,0.15); color:#748ffc; }
+.tab-btn { padding:8px 16px; font-size:13px; font-weight:500; border-radius:6px; color:rgba(148,163,184,0.7); transition:all 0.2s; cursor:pointer; border:none; background:none; }
+.tab-btn:hover { color:#e2e8f0; }
+.tab-btn.active { background:rgba(66,99,235,0.15); color:#748ffc; }
+.signal-light { width:48px; height:48px; border-radius:50%; border:3px solid rgba(255,255,255,0.1); cursor:pointer; transition:all 0.3s; }
+.signal-light:hover { transform:scale(1.1); }
+.signal-light.on { border-color:currentColor; }
+.signal-green.on { background:radial-gradient(circle,#4ade80,#16a34a); box-shadow:0 0 24px rgba(34,197,94,0.6); }
+.signal-amber.on { background:radial-gradient(circle,#fbbf24,#d97706); box-shadow:0 0 24px rgba(245,158,11,0.6); }
+.signal-red.on { background:radial-gradient(circle,#f87171,#dc2626); box-shadow:0 0 24px rgba(239,68,68,0.6); }
+.signal-green:not(.on) { background:#14532d; }
+.signal-amber:not(.on) { background:#422006; }
+.signal-red:not(.on) { background:#450a0a; }
+.detection-badge { display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:999px; font-size:11px; font-weight:600; }
+/* Mobile sidebar overlay */
+#sidebar-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:40; }
+#sidebar-overlay.open { display:block; }
+@media (max-width: 768px) {
+    #app-sidebar { position:fixed; left:-260px; top:0; bottom:0; z-index:50; transition:left 0.25s ease; }
+    #app-sidebar.open { left:0; }
+    #main-content { margin-left:0 !important; }
+    .tab-content { padding: 0 !important; }
+}
+{% endblock %}
+
+{% block body %}
+<div id="sidebar-overlay" onclick="closeSidebar()"></div>
+<div class="flex h-screen overflow-hidden">
+    <!-- Sidebar -->
+    <aside id="app-sidebar" class="w-60 flex-shrink-0 border-r border-surface-800 flex flex-col" style="background:linear-gradient(180deg,#0c1322,#0a0f1d)">
+        <div class="h-16 flex items-center gap-3 px-5 border-b border-surface-800/50">
+            <div class="w-8 h-8 rounded-lg bg-navy-700 flex items-center justify-center">
+                <svg class="w-4 h-4 text-navy-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
+            </div>
+            <div>
+                <p class="text-sm font-bold text-white">TrafficCommand</p>
+                <p class="text-[10px] text-surface-200/40">Control Center</p>
+            </div>
+        </div>
+
+        <nav class="flex-1 p-3 space-y-1">
+            <button class="sidebar-link active w-full" onclick="switchTab('overview')">
+                <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+                Overview
+            </button>
+            <button class="sidebar-link w-full" onclick="switchTab('detection')">
+                <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                Detection & Upload
+            </button>
+            <button class="sidebar-link w-full" onclick="switchTab('webcam')">
+                <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                Live Camera
+            </button>
+            <button class="sidebar-link w-full" onclick="switchTab('signals')">
+                <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                Signal Control
+            </button>
+            <button class="sidebar-link w-full" onclick="switchTab('incidents')">
+                <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+                Incidents
+            </button>
+            <button class="sidebar-link w-full" onclick="switchTab('logs')">
+                <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                Event Logs
+            </button>
+            <button class="sidebar-link w-full" onclick="switchTab('reports')">
+                <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                Reports
+            </button>
+        </nav>
+
+        <div class="p-3 border-t border-surface-800/50">
+            <a href="/logout" class="sidebar-link w-full text-signal-red/60 hover:text-signal-red hover:bg-signal-red/5">
+                <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                Logout
+            </a>
+        </div>
+    </aside>
+
+    <!-- Main content -->
+    <div id="main-content" class="flex-1 flex flex-col overflow-hidden">
+        <!-- Header -->
+        <header class="h-16 flex items-center justify-between px-4 md:px-6 border-b border-surface-800 bg-surface-950/80">
+            <div class="flex items-center gap-3">
+                <!-- Hamburger (mobile only) -->
+                <button class="md:hidden p-2 rounded-lg text-surface-200/60 hover:text-white hover:bg-surface-800 transition-colors" onclick="openSidebar()">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                </button>
+                <h2 class="text-base md:text-lg font-semibold text-white" id="page-title">Dashboard Overview</h2>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2">
+                    <span class="relative flex h-2.5 w-2.5">
+                        <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-signal-green opacity-75"></span>
+                        <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-signal-green"></span>
+                    </span>
+                    <span class="text-xs font-medium text-signal-green">SYSTEM ONLINE</span>
+                </div>
+                <div class="h-8 w-px bg-surface-800"></div>
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-full bg-navy-700/50 flex items-center justify-center text-sm font-bold text-navy-300">
+                        {{ admin.name[0] if admin.name else 'A' }}
+                    </div>
+                    <span class="text-sm text-surface-200">{{ admin.name or 'Admin' }}</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Content area -->
+        <main class="flex-1 overflow-y-auto p-6" id="main-content">
+
+            <!-- OVERVIEW TAB -->
+            <div id="tab-overview" class="tab-content">
+                <!-- Stats cards -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                    <div class="glass rounded-xl p-5 card-hover">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-xs font-medium text-surface-200/60 uppercase tracking-wider">Total Detections</span>
+                            <svg class="w-5 h-5 text-navy-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                        </div>
+                        <p class="text-3xl font-bold text-white" id="stat-detections">0</p>
+                        <p class="text-xs text-surface-200/50 mt-1">Processed scans</p>
+                    </div>
+                    <div class="glass rounded-xl p-5 card-hover">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-xs font-medium text-surface-200/60 uppercase tracking-wider">Active Incidents</span>
+                            <svg class="w-5 h-5 text-signal-amber" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+                        </div>
+                        <p class="text-3xl font-bold text-white" id="stat-incidents">0</p>
+                        <p class="text-xs text-surface-200/50 mt-1">Requires attention</p>
+                    </div>
+                    <div class="glass rounded-xl p-5 card-hover">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-xs font-medium text-surface-200/60 uppercase tracking-wider">Emergency Alerts</span>
+                            <svg class="w-5 h-5 text-signal-red" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                        </div>
+                        <p class="text-3xl font-bold text-white" id="stat-emergency">0</p>
+                        <p class="text-xs text-surface-200/50 mt-1">Emergency vehicles flagged</p>
+                    </div>
+                    <div class="glass rounded-xl p-5 card-hover">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-xs font-medium text-surface-200/60 uppercase tracking-wider">Traffic Density</span>
+                            <svg class="w-5 h-5 text-signal-green" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+                        </div>
+                        <p class="text-3xl font-bold text-white" id="stat-density">--</p>
+                        <p class="text-xs text-surface-200/50 mt-1">Current overall level</p>
+                    </div>
+                </div>
+
+                <!-- Recent detections -->
+                <div class="glass rounded-xl p-6 mb-6">
+                    <h3 class="text-base font-semibold text-white mb-4">Recent Detection Results</h3>
+                    <div id="recent-detections" class="space-y-3">
+                        <p class="text-sm text-surface-200/50 text-center py-8">No detection data yet. Upload an image or start the webcam to begin.</p>
+                    </div>
+                </div>
+
+                <!-- Recent incidents -->
+                <div class="glass rounded-xl p-6">
+                    <h3 class="text-base font-semibold text-white mb-4">Active Incidents</h3>
+                    <div id="recent-incidents" class="space-y-3">
+                        <p class="text-sm text-surface-200/50 text-center py-8">No active incidents.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DETECTION & UPLOAD TAB -->
+            <div id="tab-detection" class="tab-content hidden">
+                <div class="grid lg:grid-cols-2 gap-6">
+                    <!-- Upload panel -->
+                    <div class="glass rounded-xl p-6">
+                        <h3 class="text-base font-semibold text-white mb-4">Upload Traffic Media</h3>
+                        <form id="upload-form" class="space-y-4">
+                            <div class="grid grid-cols-2 gap-3">
+                                <div class="col-span-2">
+                                    <label class="block text-sm text-surface-200/70 mb-2">Traffic Line</label>
+                                    <select id="upload-line" class="w-full px-3 py-3 rounded-lg bg-surface-900/80 border border-surface-800 text-white text-sm focus:outline-none focus:border-navy-500 transition-colors">
+                                        <option value="">-- Select Line --</option>
+                                        <option value="line-1">Line 1 - Mangamur Road</option>
+                                        <option value="line-2">Line 2 - Trunk Road</option>
+                                        <option value="line-3">Line 3 - Kurnool Road</option>
+                                        <option value="line-4">Line 4 - Court Center</option>
+                                        <option value="line-5">Line 5 - Station Road</option>
+                                        <option value="line-6">Line 6 - Highway 101</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm text-surface-200/70 mb-2">Select Image or Video</label>
+                                <div id="drop-zone" class="border-2 border-dashed border-surface-800 rounded-xl p-8 text-center hover:border-navy-600 transition-colors cursor-pointer">
+                                    <svg class="w-10 h-10 text-surface-200/30 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                                    <p class="text-sm text-surface-200/50 mb-1">Drag & drop or click to upload</p>
+                                    <p class="text-xs text-surface-200/30">Images: PNG, JPG, WEBP | Videos: MP4, AVI, MOV</p>
+                                    <input type="file" id="file-input" accept="image/*,video/*" class="hidden">
+                                </div>
+                                <p id="file-name" class="text-xs text-navy-300 mt-2 hidden"></p>
+                            </div>
+
+                            <button type="submit" id="upload-btn" class="w-full py-3 rounded-lg bg-navy-700 text-white font-semibold hover:bg-navy-600 transition-all glow-blue disabled:opacity-50 text-sm" disabled>
+                                Analyze Traffic
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Results panel -->
+                    <div class="glass rounded-xl p-6">
+                        <h3 class="text-base font-semibold text-white mb-4">Detection Results</h3>
+                        <div id="detection-results">
+                            <div class="flex flex-col items-center justify-center py-16 text-surface-200/30">
+                                <svg class="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/></svg>
+                                <p class="text-sm">Upload media to see detection results</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- WEBCAM TAB -->
+            <div id="tab-webcam" class="tab-content hidden">
+                <div class="grid lg:grid-cols-2 gap-6">
+                    <div class="glass rounded-xl p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-base font-semibold text-white">Live Camera Feed</h3>
+                            <div id="cam-status" class="flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-surface-200/30"></span>
+                                <span class="text-xs text-surface-200/50">Offline</span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm text-surface-200/70 mb-2">Camera Location</label>
+                            <input type="text" id="cam-location" placeholder="e.g., Junction 5 - Main Road" value="Live Camera Feed" class="w-full px-4 py-2.5 rounded-lg bg-surface-900/80 border border-surface-800 text-white placeholder-surface-200/30 focus:outline-none focus:border-navy-500 transition-colors text-sm mb-4">
+                        </div>
+
+                        <div class="relative rounded-xl overflow-hidden bg-surface-900 aspect-video mb-4">
+                            <video id="webcam-video" autoplay playsinline class="w-full h-full object-cover hidden"></video>
+                            <canvas id="webcam-canvas" class="hidden"></canvas>
+                            <div id="cam-placeholder" class="absolute inset-0 flex flex-col items-center justify-center text-surface-200/30">
+                                <svg class="w-16 h-16 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/></svg>
+                                <p class="text-sm">Camera not started</p>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-3">
+                            <button id="start-cam" class="flex-1 py-2.5 rounded-lg bg-signal-green/15 text-signal-green border border-signal-green/30 font-medium text-sm hover:bg-signal-green/25 transition-colors">
+                                Start Camera
+                            </button>
+                            <button id="stop-cam" class="flex-1 py-2.5 rounded-lg bg-signal-red/15 text-signal-red border border-signal-red/30 font-medium text-sm hover:bg-signal-red/25 transition-colors hidden">
+                                Stop Camera
+                            </button>
+                            <button id="capture-btn" class="flex-1 py-2.5 rounded-lg bg-navy-700 text-white font-medium text-sm hover:bg-navy-600 transition-colors hidden">
+                                Capture & Detect
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="glass rounded-xl p-6">
+                        <h3 class="text-base font-semibold text-white mb-4">Live Detection Results</h3>
+                        <div id="webcam-results">
+                            <div class="flex flex-col items-center justify-center py-16 text-surface-200/30">
+                                <svg class="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/></svg>
+                                <p class="text-sm">Start camera and capture to see results</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SIGNAL CONTROL TAB -->
+            <div id="tab-signals" class="tab-content hidden">
+                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6" id="signal-grid">
+                    <!-- Generated by JS -->
+                </div>
+            </div>
+
+            <!-- INCIDENTS TAB -->
+            <div id="tab-incidents" class="tab-content hidden">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-base font-semibold text-white">Incident Management</h3>
+                    <button id="new-incident-btn" class="px-4 py-2 rounded-lg bg-navy-700 text-white text-sm font-medium hover:bg-navy-600 transition-colors">
+                        + Report Incident
+                    </button>
+                </div>
+
+                <!-- New incident form (hidden) -->
+                <div id="incident-form-wrapper" class="glass rounded-xl p-6 mb-6 hidden">
+                    <h4 class="text-sm font-semibold text-white mb-4">New Incident Report</h4>
+                    <form id="incident-form" class="grid md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs text-surface-200/60 mb-1.5">Type</label>
+                            <select id="inc-type" class="w-full px-3 py-2.5 rounded-lg bg-surface-900/80 border border-surface-800 text-white text-sm focus:outline-none focus:border-navy-500">
+                                <option value="accident">Accident</option>
+                                <option value="congestion">Congestion</option>
+                                <option value="road_closure">Road Closure</option>
+                                <option value="emergency">Emergency Vehicle</option>
+                                <option value="signal_failure">Signal Failure</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-surface-200/60 mb-1.5">Severity</label>
+                            <select id="inc-severity" class="w-full px-3 py-2.5 rounded-lg bg-surface-900/80 border border-surface-800 text-white text-sm focus:outline-none focus:border-navy-500">
+                                <option value="low">Low</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="high">High</option>
+                                <option value="critical">Critical</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-surface-200/60 mb-1.5">Location</label>
+                            <input type="text" id="inc-location" placeholder="Enter location" class="w-full px-3 py-2.5 rounded-lg bg-surface-900/80 border border-surface-800 text-white placeholder-surface-200/30 text-sm focus:outline-none focus:border-navy-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-surface-200/60 mb-1.5">Description</label>
+                            <input type="text" id="inc-desc" placeholder="Brief description" class="w-full px-3 py-2.5 rounded-lg bg-surface-900/80 border border-surface-800 text-white placeholder-surface-200/30 text-sm focus:outline-none focus:border-navy-500">
+                        </div>
+                        <div class="md:col-span-2 flex gap-3">
+                            <button type="submit" class="px-6 py-2.5 rounded-lg bg-navy-700 text-white text-sm font-medium hover:bg-navy-600 transition-colors">Submit Report</button>
+                            <button type="button" onclick="document.getElementById('incident-form-wrapper').classList.add('hidden')" class="px-6 py-2.5 rounded-lg border border-surface-800 text-surface-200 text-sm hover:bg-surface-800 transition-colors">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div id="incidents-list" class="space-y-3">
+                    <p class="text-sm text-surface-200/50 text-center py-8">Loading incidents...</p>
+                </div>
+            </div>
+
+            <!-- LOGS TAB -->
+            <div id="tab-logs" class="tab-content hidden">
+                <div class="glass rounded-xl p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-base font-semibold text-white">Traffic Event Logs</h3>
+                        <button onclick="loadLogs()" class="text-xs text-navy-300 hover:text-navy-200 transition-colors">Refresh</button>
+                    </div>
+                    <div id="logs-list" class="space-y-2">
+                        <p class="text-sm text-surface-200/50 text-center py-8">Loading logs...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- REPORTS TAB -->
+            <div id="tab-reports" class="tab-content hidden">
+                <div class="glass rounded-xl p-6 mb-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <h3 class="text-base font-semibold text-white">Export Reports</h3>
+                            <p class="text-xs text-surface-200/50 mt-1">Download detection and incident data as CSV</p>
+                        </div>
+                    </div>
+                    <div class="grid md:grid-cols-3 gap-4">
+                        <!-- Detections Report -->
+                        <div class="p-5 rounded-xl bg-surface-900/60 border border-surface-800">
+                            <div class="w-10 h-10 rounded-lg bg-navy-700/50 flex items-center justify-center mb-3">
+                                <svg class="w-5 h-5 text-navy-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                            </div>
+                            <h4 class="text-sm font-semibold text-white mb-1">Detection Report</h4>
+                            <p class="text-xs text-surface-200/50 mb-4">All vehicle detections with density, emergency status, location and timestamp</p>
+                            <button onclick="exportReport('detections','pdf')" class="w-full py-2 rounded-lg bg-navy-700 text-white text-xs font-semibold hover:bg-navy-600 transition-colors">
+                                Download PDF
+                            </button>
+                        </div>
+                        <!-- Incidents Report -->
+                        <div class="p-5 rounded-xl bg-surface-900/60 border border-surface-800">
+                            <div class="w-10 h-10 rounded-lg bg-signal-red/10 flex items-center justify-center mb-3">
+                                <svg class="w-5 h-5 text-signal-red" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                            </div>
+                            <h4 class="text-sm font-semibold text-white mb-1">Incidents Report</h4>
+                            <p class="text-xs text-surface-200/50 mb-4">All incidents including emergency alerts, severity, status and resolution time</p>
+                            <button onclick="exportReport('incidents','pdf')" class="w-full py-2 rounded-lg bg-signal-red/20 text-signal-red text-xs font-semibold hover:bg-signal-red/30 transition-colors border border-signal-red/20">
+                                Download PDF
+                            </button>
+                        </div>
+                        <!-- Signal Logs Report -->
+                        <div class="p-5 rounded-xl bg-surface-900/60 border border-surface-800">
+                            <div class="w-10 h-10 rounded-lg bg-signal-green/10 flex items-center justify-center mb-3">
+                                <svg class="w-5 h-5 text-signal-green" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                            </div>
+                            <h4 class="text-sm font-semibold text-white mb-1">Signal Logs Report</h4>
+                            <p class="text-xs text-surface-200/50 mb-4">All traffic signal changes with line ID, state, reason and timestamp</p>
+                            <button onclick="exportReport('signals','pdf')" class="w-full py-2 rounded-lg bg-signal-green/10 text-signal-green text-xs font-semibold hover:bg-signal-green/20 transition-colors border border-signal-green/20">
+                                Download PDF
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+</div>
+
+<!-- Emergency alert overlay -->
+<div id="emergency-overlay" class="fixed inset-0 z-50 flex items-center justify-center bg-surface-950/80 hidden">
+    <div class="glass rounded-2xl p-8 max-w-lg w-full mx-4 border border-signal-red/30 animate-in">
+        <div class="flex items-center gap-3 mb-4">
+            <div class="w-12 h-12 rounded-xl bg-signal-red/20 flex items-center justify-center">
+                <svg class="w-6 h-6 text-signal-red animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+            </div>
+            <div>
+                <h3 class="text-xl font-bold text-signal-red">Emergency Vehicle Detected!</h3>
+                <p class="text-sm text-surface-200/60" id="emergency-location"></p>
+            </div>
+        </div>
+        <div id="emergency-details" class="mb-6 p-4 rounded-lg bg-signal-red/5 border border-signal-red/20">
+        </div>
+        <div class="flex gap-3">
+            <button onclick="document.getElementById('emergency-overlay').classList.add('hidden')" class="w-full py-2.5 rounded-lg bg-signal-green/15 text-signal-green border border-signal-green/30 font-medium text-sm hover:bg-signal-green/25 transition-colors">
+                Acknowledged — Signal sequence active
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ========== TAB NAVIGATION ==========
+function openSidebar() {
+    document.getElementById('app-sidebar').classList.add('open');
+    document.getElementById('sidebar-overlay').classList.add('open');
+}
+function closeSidebar() {
+    document.getElementById('app-sidebar').classList.remove('open');
+    document.getElementById('sidebar-overlay').classList.remove('open');
+}
+
+function switchTab(tab) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+    document.getElementById('tab-' + tab).classList.remove('hidden');
+
+    document.querySelectorAll('.sidebar-link').forEach(el => el.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+
+    const titles = {
+        overview: 'Dashboard Overview', detection: 'Detection & Upload',
+        webcam: 'Live Camera Feed', signals: 'Signal Control',
+        incidents: 'Incident Management', logs: 'Event Logs', reports: 'Reports & Export'
+    };
+    document.getElementById('page-title').textContent = titles[tab] || 'Dashboard';
+
+    // Close sidebar on mobile after selecting a tab
+    closeSidebar();
+
+    if (tab === 'signals') loadSignalStates();
+    if (tab === 'incidents') loadIncidents();
+    if (tab === 'logs') loadLogs();
+}
+
+// ========== STATS ==========
+async function loadStats() {
+    try {
+        const data = await apiCall('/api/dashboard/stats');
+        document.getElementById('stat-detections').textContent = data.total_detections;
+        document.getElementById('stat-incidents').textContent = data.active_incidents;
+        document.getElementById('stat-emergency').textContent = data.emergency_count;
+        const densityEl = document.getElementById('stat-density');
+        densityEl.textContent = data.current_density.toUpperCase();
+        densityEl.className = `text-3xl font-bold density-${data.current_density}`;
+    } catch (e) {}
+}
+
+// ========== FILE UPLOAD ==========
+const dropZone = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
+const uploadForm = document.getElementById('upload-form');
+const uploadBtn = document.getElementById('upload-btn');
+const fileNameEl = document.getElementById('file-name');
+
+dropZone.addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('border-navy-500'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('border-navy-500'));
+dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('border-navy-500');
+    if (e.dataTransfer.files.length) {
+        fileInput.files = e.dataTransfer.files;
+        onFileSelected();
+    }
+});
+fileInput.addEventListener('change', onFileSelected);
+
+function onFileSelected() {
+    if (fileInput.files.length) {
+        fileNameEl.textContent = fileInput.files[0].name;
+        fileNameEl.classList.remove('hidden');
+        uploadBtn.disabled = false;
+    }
+}
+
+uploadForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!fileInput.files.length) return;
+
+    uploadBtn.disabled = true;
+    uploadBtn.textContent = 'Analyzing...';
+
+    const formData = new FormData();
+    formData.append('file', fileInput.files[0]);
+    const lineSelect = document.getElementById('upload-line');
+    const lineVal    = lineSelect.options[lineSelect.selectedIndex];
+    const locationStr = lineVal.value ? lineVal.text : 'Unknown Location';
+    formData.append('location', locationStr);
+
+    try {
+        const res = await fetch('/api/dashboard/upload', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+
+        displayDetectionResult(data, 'detection-results');
+        showToast('Detection complete!', 'success');
+        loadStats();
+        loadRecentDetections();
+
+        if (data.emergency_detected) {
+            showEmergencyAlert(data);
+        }
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
+
+    uploadBtn.disabled = false;
+    uploadBtn.textContent = 'Analyze Traffic';
+});
+
+function displayDetectionResult(data, containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    // Safe defaults — guard against missing/null fields
+    const density        = (data.density || 'low').toLowerCase();
+    const totalVehicles  = data.total_vehicles || 0;
+    const emergencyCount = data.emergency_count || 0;
+    const emergencyTypes = Array.isArray(data.emergency_vehicles) ? data.emergency_vehicles : [];
+    const vehicleCounts  = data.vehicle_counts || {};
+    const densityColors  = { low: 'signal-green', medium: 'signal-amber', high: 'signal-red' };
+    const dc             = densityColors[density] || 'navy-400';
+
+    container.innerHTML = `
+        <div class="space-y-4 animate-in">
+            ${data.annotated_file || data.annotated_frame ? `
+                <div class="rounded-xl overflow-hidden border border-surface-800">
+                    <img src="${data.annotated_file || data.annotated_frame}" alt="Detection result" class="w-full">
+                </div>
+            ` : ''}
+            <div class="grid grid-cols-3 gap-3">
+                <div class="rounded-lg bg-surface-900/50 border border-surface-800 p-3">
+                    <p class="text-xs text-surface-200/50 mb-1">Total Vehicles</p>
+                    <p class="text-2xl font-bold text-white">${totalVehicles}</p>
+                </div>
+                <div class="rounded-lg bg-surface-900/50 border border-surface-800 p-3">
+                    <p class="text-xs text-surface-200/50 mb-1">Traffic Density</p>
+                    <p class="text-2xl font-bold text-${dc}">${density.toUpperCase()}</p>
+                </div>
+                <div class="rounded-lg p-3 ${emergencyCount > 0 ? 'bg-signal-red/10 border border-signal-red/30' : 'bg-surface-900/50 border border-surface-800'}">
+                    <p class="text-xs text-surface-200/50 mb-1">Emergency</p>
+                    <p class="text-2xl font-bold ${emergencyCount > 0 ? 'text-signal-red' : 'text-white'}">${emergencyCount}</p>
+                </div>
+            </div>
+            <div class="rounded-lg bg-surface-900/50 border border-surface-800 p-3">
+                <p class="text-xs text-surface-200/50 mb-2">Vehicle Breakdown</p>
+                <div class="flex flex-wrap gap-2">
+                    ${Object.entries(vehicleCounts).map(([type, count]) =>
+                        `<span class="detection-badge bg-navy-900/50 text-navy-300 border border-navy-700/30">${type}: ${count}</span>`
+                    ).join('') || '<span class="text-xs text-surface-200/40">No vehicles detected</span>'}
+                </div>
+            </div>
+            ${data.emergency_detected ? `
+                <div class="rounded-lg bg-signal-red/10 border border-signal-red/30 p-3">
+                    <div class="flex items-center justify-between mb-1">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-signal-red animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01"/></svg>
+                            <p class="text-sm font-semibold text-signal-red">Emergency Vehicle Detected</p>
+                        </div>
+                        <span class="text-lg font-bold text-signal-red">${emergencyCount}</span>
+                    </div>
+                    <p class="text-xs text-signal-red/80">${emergencyTypes.length ? emergencyTypes.join(', ') : 'emergency vehicle'}</p>
+                </div>
+            ` : `
+                <div class="rounded-lg bg-signal-green/10 border border-signal-green/30 p-3">
+                    <p class="text-xs text-signal-green">No emergency vehicles detected</p>
+                </div>
+            `}
+            ${data.location ? `<p class="text-xs text-surface-200/40">Location: ${data.location}</p>` : ''}
+            ${data.media_type === 'video' ? `<p class="text-xs text-surface-200/40">Video: ${data.video_duration_s || 0}s &bull; ${data.video_frames_sampled || 0} frames sampled</p>` : ''}
+        </div>
+    `;
+}
+
+// ========== WEBCAM ==========
+let webcamStream = null;
+let webcamInterval = null;
+const video = document.getElementById('webcam-video');
+const canvas = document.getElementById('webcam-canvas');
+const startCam = document.getElementById('start-cam');
+const stopCam = document.getElementById('stop-cam');
+const captureBtn = document.getElementById('capture-btn');
+
+startCam.addEventListener('click', async () => {
+    try {
+        webcamStream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
+        video.srcObject = webcamStream;
+        video.classList.remove('hidden');
+        document.getElementById('cam-placeholder').classList.add('hidden');
+        startCam.classList.add('hidden');
+        stopCam.classList.remove('hidden');
+        captureBtn.classList.remove('hidden');
+        document.getElementById('cam-status').innerHTML = '<span class="relative flex h-2 w-2"><span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-signal-green opacity-75"></span><span class="relative inline-flex h-2 w-2 rounded-full bg-signal-green"></span></span><span class="text-xs text-signal-green">Live</span>';
+        showToast('Camera started', 'success');
+    } catch (err) {
+        showToast('Camera access denied. Please allow camera permissions.', 'error');
+    }
+});
+
+stopCam.addEventListener('click', () => {
+    if (webcamStream) {
+        webcamStream.getTracks().forEach(t => t.stop());
+        webcamStream = null;
+    }
+    if (webcamInterval) { clearInterval(webcamInterval); webcamInterval = null; }
+    video.classList.add('hidden');
+    document.getElementById('cam-placeholder').classList.remove('hidden');
+    startCam.classList.remove('hidden');
+    stopCam.classList.add('hidden');
+    captureBtn.classList.add('hidden');
+    document.getElementById('cam-status').innerHTML = '<span class="w-2 h-2 rounded-full bg-surface-200/30"></span><span class="text-xs text-surface-200/50">Offline</span>';
+});
+
+captureBtn.addEventListener('click', async () => {
+    if (!webcamStream) return;
+    captureBtn.disabled = true;
+    captureBtn.textContent = 'Detecting...';
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    const frameData = canvas.toDataURL('image/jpeg', 0.8);
+
+    try {
+        const data = await apiCall('/api/detect/frame', {
+            method: 'POST',
+            body: JSON.stringify({ frame: frameData, location: document.getElementById('cam-location').value })
+        });
+        displayDetectionResult(data, 'webcam-results');
+        loadStats();
+        if (data.emergency_detected) showEmergencyAlert(data);
+    } catch (err) {}
+
+    captureBtn.disabled = false;
+    captureBtn.textContent = 'Capture & Detect';
+});
+
+// ========== SIGNAL CONTROL ==========
+// All lines start RED — actual state is loaded from server on page load
+const signalLines = [
+    { id: 'line-1', name: 'Line 1 - Mangamur Road', state: 'red' },
+    { id: 'line-2', name: 'Line 2 - Trunk Road', state: 'red' },
+    { id: 'line-3', name: 'Line 3 - Kurnool Road', state: 'red' },
+    { id: 'line-4', name: 'Line 4 - Court Center', state: 'red' },
+    { id: 'line-5', name: 'Line 5 - Station Road', state: 'red' },
+    { id: 'line-6', name: 'Line 6 - Highway 101', state: 'red' },
+];
+
+async function loadSignalStates() {
+    try {
+        const states = await apiCall('/api/dashboard/signals');
+        // Update in-memory state from server
+        signalLines.forEach(line => {
+            if (states[line.id]) line.state = states[line.id];
+        });
+    } catch (e) {}
+    initSignals();
+}
+
+// Countdown timers per line: { lineId: intervalId }
+const _countdownTimers   = {};
+const _countdownRemaining = {};  // tracks remaining seconds even when tab is closed
+
+function _startCountdown(lineId, seconds) {
+    if (_countdownTimers[lineId]) {
+        clearInterval(_countdownTimers[lineId]);
+        delete _countdownTimers[lineId];
+    }
+    const el = document.getElementById('signal-countdown-' + lineId);
+    let remaining = seconds;
+    _countdownRemaining[lineId] = remaining;
+
+    function _tick() {
+        remaining--;
+        _countdownRemaining[lineId] = remaining;
+        const el2 = document.getElementById('signal-countdown-' + lineId);
+        if (remaining <= 0) {
+            clearInterval(_countdownTimers[lineId]);
+            delete _countdownTimers[lineId];
+            delete _countdownRemaining[lineId];
+            if (el2) { el2.classList.add('hidden'); el2.textContent = ''; }
+            const card = document.getElementById('signal-card-' + lineId);
+            if (card) { card.style.borderColor = ''; card.style.boxShadow = ''; }
+        } else {
+            if (el2) el2.textContent = `🟢 Emergency: ${remaining}s`;
+        }
+    }
+
+    if (el) {
+        el.textContent = `🟢 Emergency: ${remaining}s`;
+        el.classList.remove('hidden');
+    }
+    _countdownTimers[lineId] = setInterval(_tick, 1000);
+}
+
+function initSignals() {
+    const grid = document.getElementById('signal-grid');
+    grid.innerHTML = signalLines.map(line => `
+        <div class="glass rounded-xl p-6 card-hover" id="signal-card-${line.id}">
+            <div class="flex items-center justify-between mb-5">
+                <div>
+                    <h4 class="text-sm font-semibold text-white">${line.name}</h4>
+                    <p class="text-xs text-surface-200/50 mt-0.5" id="signal-status-${line.id}">Status: ${line.state.toUpperCase()}</p>
+                    <p class="text-xs font-semibold text-signal-green mt-1 hidden" id="signal-countdown-${line.id}"></p>
+                </div>
+            </div>
+            <div class="flex items-center justify-center gap-4 mb-5 py-4 rounded-lg bg-surface-900/60">
+                <button class="signal-light signal-red ${line.state === 'red' ? 'on' : ''}" onclick="changeSignal('${line.id}','red')" title="Red - Stop" style="color:#ef4444"></button>
+                <button class="signal-light signal-amber ${line.state === 'yellow' ? 'on' : ''}" onclick="changeSignal('${line.id}','yellow')" title="Yellow - Caution" style="color:#f59e0b"></button>
+                <button class="signal-light signal-green ${line.state === 'green' ? 'on' : ''}" onclick="changeSignal('${line.id}','green')" title="Green - Go" style="color:#22c55e"></button>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="changeSignal('${line.id}','green')" class="flex-1 py-2 rounded-md text-xs font-medium bg-signal-green/10 text-signal-green border border-signal-green/20 hover:bg-signal-green/20 transition-colors">Green</button>
+                <button onclick="changeSignal('${line.id}','yellow')" class="flex-1 py-2 rounded-md text-xs font-medium bg-signal-amber/10 text-signal-amber border border-signal-amber/20 hover:bg-signal-amber/20 transition-colors">Yellow</button>
+                <button onclick="changeSignal('${line.id}','red')" class="flex-1 py-2 rounded-md text-xs font-medium bg-signal-red/10 text-signal-red border border-signal-red/20 hover:bg-signal-red/20 transition-colors">Red</button>
+            </div>
+        </div>
+    `).join('');
+
+    // Re-apply any active countdown timers after re-render
+    for (const [lineId, remaining] of Object.entries(_countdownRemaining)) {
+        if (remaining > 0) {
+            const card = document.getElementById('signal-card-' + lineId);
+            if (card) {
+                card.style.borderColor = 'rgba(34,197,94,0.5)';
+                card.style.boxShadow   = '0 0 20px rgba(34,197,94,0.15)';
+                _startCountdown(lineId, remaining);
+            }
+        }
+    }
+}
+
+async function changeSignal(lineId, state, silent = false) {
+    try {
+        await apiCall('/api/dashboard/signals', {
+            method: 'POST',
+            body: JSON.stringify({ line_id: lineId, state })
+        });
+
+        // Update visual
+        const card = document.getElementById('signal-card-' + lineId);
+        if (card) {
+            card.querySelectorAll('.signal-light').forEach(el => el.classList.remove('on'));
+            card.querySelector('.signal-' + (state === 'yellow' ? 'amber' : state)).classList.add('on');
+            document.getElementById('signal-status-' + lineId).textContent = 'Status: ' + state.toUpperCase();
+        }
+
+        const line = signalLines.find(l => l.id === lineId);
+        if (line) line.state = state;
+
+        // Emit via WebSocket
+        if (window.socket) socket.emit('signal_update', { line_id: lineId, state });
+
+        if (!silent) showToast(`Signal ${lineId} changed to ${state.toUpperCase()}`, 'success');
+    } catch (err) {}
+}
+
+// ========== EMERGENCY ALERT ==========
+function showEmergencyAlert(data) {
+    const density = (data.density || 'low').toLowerCase();
+    const vehicles = Array.isArray(data.emergency_vehicles) && data.emergency_vehicles.length
+        ? data.emergency_vehicles.join(', ') : 'Emergency vehicle';
+    const location = data.location || 'Unknown location';
+    // Try to extract line from location
+    const lineMatch = location.match(/line[-\s]?(\d)/i);
+    const lineLabel = lineMatch ? `Line ${lineMatch[1]}` : null;
+
+    document.getElementById('emergency-location').textContent = location;
+    document.getElementById('emergency-details').innerHTML = `
+        <p class="text-sm text-surface-200">Detected: <strong class="text-signal-red">${vehicles}</strong></p>
+        <p class="text-sm text-surface-200 mt-1">Total vehicles: ${data.total_vehicles || 0} | Density: <span class="font-bold text-${density === 'high' ? 'signal-red' : density === 'medium' ? 'signal-amber' : 'signal-green'}">${density.toUpperCase()}</span></p>
+        ${lineLabel ? `<p class="text-sm text-signal-green mt-2 font-semibold">→ ${lineLabel} will get GREEN for 60s. All other lines set to RED.</p>` : ''}
+        <p class="text-xs text-surface-200/50 mt-2">Signal sequence is being applied automatically.</p>
+    `;
+    document.getElementById('emergency-overlay').classList.remove('hidden');
+}
+
+function clearRouteForEmergency() {
+    // Manual override — set all signals to green, suppress per-line toasts
+    signalLines.forEach(line => changeSignal(line.id, 'green', true));
+    document.getElementById('emergency-overlay').classList.add('hidden');
+    showToast('All signals set to GREEN for emergency clearance!', 'warning');
+}
+
+// ========== INCIDENTS ==========
+document.getElementById('new-incident-btn').addEventListener('click', () => {
+    document.getElementById('incident-form-wrapper').classList.remove('hidden');
+});
+
+document.getElementById('incident-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    try {
+        await apiCall('/api/dashboard/incidents', {
+            method: 'POST',
+            body: JSON.stringify({
+                type: document.getElementById('inc-type').value,
+                severity: document.getElementById('inc-severity').value,
+                location: document.getElementById('inc-location').value,
+                description: document.getElementById('inc-desc').value
+            })
+        });
+        showToast('Incident reported', 'success');
+        document.getElementById('incident-form-wrapper').classList.add('hidden');
+        document.getElementById('incident-form').reset();
+        loadIncidents();
+        loadStats();
+    } catch (err) {}
+});
+
+async function loadIncidents() {
+    try {
+        const data = await apiCall('/api/dashboard/incidents');
+        const container = document.getElementById('incidents-list');
+        if (!data.length) {
+            container.innerHTML = '<p class="text-sm text-surface-200/50 text-center py-8">No incidents recorded.</p>';
+            return;
+        }
+        container.innerHTML = data.map(inc => {
+            const sevColors = { low:'navy-400', medium:'signal-amber', high:'signal-amber', critical:'signal-red' };
+            const sc = sevColors[inc.severity] || 'navy-400';
+            return `
+                <div class="glass rounded-lg p-4 flex items-center justify-between card-hover">
+                    <div class="flex items-center gap-4">
+                        <div class="w-2 h-2 rounded-full bg-${sc} ${inc.status==='active' ? 'pulse-dot' : ''}"></div>
+                        <div>
+                            <p class="text-sm font-medium text-white">${inc.type.replace('_',' ').replace(/\b\w/g,c=>c.toUpperCase())} — ${inc.location || 'No location'}</p>
+                            <p class="text-xs text-surface-200/50">${inc.description || 'No description'} &bull; ${new Date(inc.timestamp).toLocaleString()}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="detection-badge bg-${sc}/10 text-${sc} border border-${sc}/20">${inc.severity}</span>
+                        ${inc.status === 'active' ? `<button onclick="resolveIncident('${inc.id}')" class="text-xs text-signal-green hover:underline">Resolve</button>` : '<span class="text-xs text-surface-200/40">Resolved</span>'}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    } catch (err) {}
+}
+
+async function resolveIncident(id) {
+    try {
+        await apiCall(`/api/dashboard/incidents/${id}/resolve`, { method: 'POST' });
+        showToast('Incident resolved', 'success');
+        loadIncidents();
+        loadStats();
+    } catch (err) {}
+}
+
+// ========== LOGS ==========
+async function loadLogs() {
+    const container = document.getElementById('logs-list');
+    container.innerHTML = '<p class="text-sm text-surface-200/50 text-center py-8">Loading...</p>';
+    try {
+        const data = await apiCall('/api/dashboard/logs');
+        if (!data.length) {
+            container.innerHTML = '<p class="text-sm text-surface-200/50 text-center py-8">No events recorded yet.</p>';
+            return;
+        }
+        container.innerHTML = data.map(log => `
+            <div class="flex items-center gap-4 py-2.5 border-b border-surface-800/50 last:border-0">
+                <span class="text-xs text-surface-200/40 w-36 shrink-0">${new Date(log.timestamp).toLocaleString()}</span>
+                <span class="detection-badge bg-navy-900/30 text-navy-300 border border-navy-800/30">${log.type.replace('_',' ')}</span>
+                <span class="text-xs text-surface-200/70 flex-1">${log.line_id || log.location || log.email || ''} ${log.state ? '→ ' + log.state.toUpperCase() : ''}</span>
+            </div>
+        `).join('');
+    } catch (err) {
+        container.innerHTML = `<p class="text-sm text-signal-red/70 text-center py-8">Failed to load logs: ${err.message}</p>`;
+    }
+}
+
+// ========== RECENT DETECTIONS (Overview) ==========
+async function loadRecentDetections() {
+    try {
+        const data = await apiCall('/api/dashboard/detections');
+        const container = document.getElementById('recent-detections');
+        if (!data.length) {
+            container.innerHTML = '<p class="text-sm text-surface-200/50 text-center py-8">No detection data yet.</p>';
+            return;
+        }
+        container.innerHTML = data.slice(0, 5).map(det => {
+            const dc = det.density === 'high' ? 'signal-red' : det.density === 'medium' ? 'signal-amber' : 'signal-green';
+            return `
+                <div class="flex items-center justify-between py-3 border-b border-surface-800/50 last:border-0">
+                    <div class="flex items-center gap-3">
+                        ${det.annotated_file ? `<img src="${det.annotated_file}" class="w-16 h-10 rounded object-cover border border-surface-800">` : ''}
+                        <div>
+                            <p class="text-sm text-white">${det.location || 'Unknown'}</p>
+                            <p class="text-xs text-surface-200/50">${det.total_vehicles} vehicles &bull; ${new Date(det.timestamp).toLocaleString()}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="detection-badge bg-${dc}/10 text-${dc} border border-${dc}/20">${det.density}</span>
+                        ${det.emergency_detected ? '<span class="detection-badge bg-signal-red/10 text-signal-red border border-signal-red/20">EMERGENCY</span>' : ''}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    } catch (err) {}
+}
+
+// ========== WEBSOCKET ==========
+let socket;
+try {
+    socket = io();
+    socket.on('emergency_notification', (data) => {
+        showEmergencyAlert(data);
+        showToast('Emergency vehicle detected at ' + (data.location || 'unknown location'), 'warning');
+        loadStats();
+    });
+    socket.on('signal_changed', (data) => {
+        // Always update in-memory state regardless of which tab is open
+        const line = signalLines.find(l => l.id === data.line_id);
+        if (line) line.state = data.state;
+
+        // Update card DOM only if Signal Control tab is currently rendered
+        const card = document.getElementById('signal-card-' + data.line_id);
+        if (card) {
+            card.querySelectorAll('.signal-light').forEach(el => el.classList.remove('on'));
+            const cssState = data.state === 'yellow' ? 'amber' : data.state;
+            const light = card.querySelector('.signal-' + cssState);
+            if (light) light.classList.add('on');
+            const statusEl = document.getElementById('signal-status-' + data.line_id);
+            if (statusEl) statusEl.textContent = 'Status: ' + data.state.toUpperCase();
+
+            // Emergency mode: countdown + glow on priority line
+            if (data.emergency && data.state === 'green' && data.priority_line === data.line_id) {
+                _startCountdown(data.line_id, 60);
+                card.style.borderColor = 'rgba(34,197,94,0.5)';
+                card.style.boxShadow   = '0 0 20px rgba(34,197,94,0.15)';
+                showToast(`Signal ${data.line_id} → GREEN for 60s (emergency clearance)`, 'success');
+            } else if (data.emergency && data.state !== 'green') {
+                card.style.borderColor = '';
+                card.style.boxShadow   = '';
+            }
+        } else if (data.emergency && data.state === 'green' && data.priority_line === data.line_id) {
+            // Tab not open yet — still show the toast
+            showToast(`Signal ${data.line_id} → GREEN for 60s (emergency clearance)`, 'success');
+        }
+    });
+} catch (e) { console.log('WebSocket not available'); }
+
+// ========== INIT ==========
+loadStats();
+loadRecentDetections();
+setInterval(loadStats, 15000);
+
+// ========== EXPORT REPORT ==========
+async function exportReport(type, fmt) {
+    try {
+        const res = await fetch(`/api/dashboard/export/${type}/${fmt}`);
+        if (!res.ok) throw new Error('Export failed');
+        const blob = await res.blob();
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href     = url;
+        const ext  = fmt === 'excel' ? 'xlsx' : 'pdf';
+        a.download = `${type}_report_${new Date().toISOString().slice(0,10)}.${ext}`;
+        a.click();
+        URL.revokeObjectURL(url);
+    } catch (e) {
+        showToast('Export failed: ' + e.message, 'error');
+    }
+}
+</script>
+{% endblock %}

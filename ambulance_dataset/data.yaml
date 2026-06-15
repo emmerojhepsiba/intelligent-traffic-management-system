@@ -1,0 +1,13 @@
+names:
+- Ambulance - v1 Ambulance last generate
+nc: 1
+path: C:\Traffic 1\ambulance_dataset
+roboflow:
+  license: CC BY 4.0
+  project: ambulance-r71d0-zgfnq
+  url: https://universe.roboflow.com/anus-workspace-q6ioi/ambulance-r71d0-zgfnq/dataset/1
+  version: 1
+  workspace: anus-workspace-q6ioi
+test: ../test/images
+train: ../train/images
+val: ../valid/images

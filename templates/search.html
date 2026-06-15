@@ -1,0 +1,447 @@
+{% extends "base.html" %}
+{% block title %}Traffic Search{% endblock %}
+
+{% block extra_styles %}
+#search-map { height: 350px; border-radius: 12px; z-index: 1; }
+@media (min-width: 640px) { #search-map { height: 450px; } }
+.leaflet-control-zoom a { background: #1e293b !important; color: #94a3b8 !important; border-color: #334155 !important; }
+.leaflet-control-attribution { background: rgba(15,23,42,0.8) !important; color: #64748b !important; }
+.leaflet-control-attribution a { color: #748ffc !important; }
+.leaflet-popup-content-wrapper { background: #1e293b; color: #e2e8f0; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); }
+.leaflet-popup-tip { background: #1e293b; }
+{% endblock %}
+
+{% block body %}
+<!-- Navigation -->
+<nav class="fixed top-0 left-0 right-0 z-50 glass">
+    <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+        <a href="/" class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-navy-700 flex items-center justify-center">
+                <svg class="w-4 h-4 text-navy-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
+            </div>
+            <span class="text-sm font-bold text-white">TrafficCommand</span>
+        </a>
+        <div class="flex items-center gap-6">
+            <a href="/" class="text-sm text-surface-200/60 hover:text-white transition-colors">Home</a>
+            <a href="/login" class="text-sm text-surface-200/60 hover:text-white transition-colors">Admin</a>
+        </div>
+    </div>
+</nav>
+
+<div class="pt-24 pb-16 px-6 max-w-7xl mx-auto">
+    <!-- Page header -->
+    <div class="mb-10">
+        <h1 class="text-3xl md:text-4xl font-bold text-white mb-3">Public Traffic Search</h1>
+        <p class="text-surface-200/60 text-lg">Check real-time traffic density, get alternate route suggestions, and start navigation.</p>
+    </div>
+
+    <!-- Search bar -->
+    <div class="glass rounded-2xl p-6 mb-8 animate-in">
+        <form id="search-form" class="flex flex-col sm:flex-row gap-3">
+            <div class="flex-1 relative">
+                <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-surface-200/30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                <input
+                    type="text"
+                    id="location-input"
+                    placeholder="Enter location (e.g., Mangamur Road, Ongole)"
+                    class="w-full pl-12 pr-4 py-3.5 rounded-xl bg-surface-900/80 border border-surface-800 text-white placeholder-surface-200/30 focus:outline-none focus:border-navy-500 focus:ring-1 focus:ring-navy-500 transition-colors"
+                    required
+                >
+            </div>
+            <button type="submit" id="search-btn" class="px-8 py-3.5 rounded-xl bg-navy-700 text-white font-semibold hover:bg-navy-600 transition-all glow-blue whitespace-nowrap">
+                Search Traffic
+            </button>
+        </form>
+
+        <!-- Quick search suggestions -->
+        <div class="flex flex-wrap gap-2 mt-4">
+            <span class="text-xs text-surface-200/40 mr-1 self-center">Try:</span>
+            <button onclick="quickSearch('Mangamur Road, Ongole')" class="px-3 py-1 rounded-full bg-surface-900/50 border border-surface-800 text-xs text-surface-200/60 hover:text-white hover:border-navy-600 transition-colors">Mangamur Road, Ongole</button>
+            <button onclick="quickSearch('Trunk Road, Ongole')" class="px-3 py-1 rounded-full bg-surface-900/50 border border-surface-800 text-xs text-surface-200/60 hover:text-white hover:border-navy-600 transition-colors">Trunk Road, Ongole</button>
+            <button onclick="quickSearch('Kurnool Road, Ongole')" class="px-3 py-1 rounded-full bg-surface-900/50 border border-surface-800 text-xs text-surface-200/60 hover:text-white hover:border-navy-600 transition-colors">Kurnool Road, Ongole</button>
+            <button onclick="quickSearch('Highway 101')" class="px-3 py-1 rounded-full bg-surface-900/50 border border-surface-800 text-xs text-surface-200/60 hover:text-white hover:border-navy-600 transition-colors">Highway 101</button>
+        </div>
+    </div>
+
+    <!-- Results section (hidden initially) -->
+    <div id="results-section" class="hidden animate-in">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+            <!-- Density result card -->
+            <div class="glass rounded-2xl p-6">
+                <h3 class="text-sm font-medium text-surface-200/60 mb-4">Traffic Density</h3>
+                <div id="density-display" class="text-center py-6">
+                    <p class="text-5xl font-extrabold mb-2" id="density-level">--</p>
+                    <p class="text-sm text-surface-200/60" id="density-location">--</p>
+                </div>
+                <div class="space-y-3 mt-4 pt-4 border-t border-surface-800/50">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-surface-200/50">Time</span>
+                        <span class="text-white" id="density-time">--</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-surface-200/50">Day</span>
+                        <span class="text-white" id="density-day">--</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-surface-200/50">Coordinates</span>
+                        <span class="text-white text-xs font-mono" id="density-coords">--</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-surface-200/50">Data Source</span>
+                        <span id="density-source" class="text-xs font-semibold">--</span>
+                    </div>
+                    <div id="real-data-stats" class="hidden space-y-2 pt-2 border-t border-surface-800/30">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-surface-200/50">Avg Vehicles</span>
+                            <span class="text-white" id="density-vehicles">--</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-surface-200/50">Scans Used</span>
+                            <span class="text-white" id="density-scans">--</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-surface-200/50">Last Updated</span>
+                            <span class="text-white text-xs" id="density-updated">--</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-surface-200/50">Emergency Events</span>
+                            <span id="density-emergency" class="text-xs font-semibold">--</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Suggestion card -->
+            <div class="glass rounded-2xl p-6">
+                <h3 class="text-sm font-medium text-surface-200/60 mb-4">Recommendation</h3>
+                <div id="suggestion-box" class="py-4">
+                    <p class="text-surface-200 leading-relaxed" id="suggestion-text">Search a location to get traffic recommendations.</p>
+                </div>
+
+                <!-- Navigation button -->
+                <div class="mt-6 pt-4 border-t border-surface-800/50">
+                    <button onclick="startNavigation()" class="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-navy-700 text-white font-semibold hover:bg-navy-600 transition-all glow-blue text-sm">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        Start Navigation
+                    </button>
+                </div>
+            </div>
+
+            <!-- Alternate routes card -->
+            <div class="glass rounded-2xl p-6">
+                <h3 class="text-sm font-medium text-surface-200/60 mb-4">Alternate Routes</h3>
+                <div id="alt-routes">
+                    <p class="text-sm text-surface-200/40 text-center py-8">Search a high-traffic location to see alternate routes.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Map -->
+        <div class="glass rounded-2xl p-4">
+            <div id="search-map"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let map = null;
+    let marker = null;
+    let routeLines = [];
+    let _destLat = null, _destLng = null, _destName = null;
+    let _userLat = null, _userLng = null;
+
+    function startNavigation() {
+        if (!_destLat || !_destLng) return;
+
+        // Use coordinates directly to avoid Google Maps misinterpreting road names as cities
+        const destQuery = `${_destLat},${_destLng}`;
+
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    const url = `https://www.google.com/maps/dir/?api=1&origin=${pos.coords.latitude},${pos.coords.longitude}&destination=${destQuery}&travelmode=driving`;
+                    window.open(url, '_blank');
+                },
+                () => {
+                    const url = `https://www.google.com/maps/dir/?api=1&destination=${destQuery}&travelmode=driving`;
+                    window.open(url, '_blank');
+                }
+            );
+        } else {
+            window.open(`https://www.google.com/maps/dir/?api=1&destination=${destQuery}&travelmode=driving`, '_blank');
+        }
+    }
+
+    // Initialize map
+    function initMap(lat, lng) {
+        if (!map) {
+            map = L.map('search-map', {
+                zoomControl: true,
+                scrollWheelZoom: true
+            }).setView([lat, lng], 14);
+
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; OpenStreetMap &copy; CARTO',
+                maxZoom: 19
+            }).addTo(map);
+        } else {
+            map.setView([lat, lng], 14);
+        }
+    }
+
+    function clearMap() {
+        if (marker) { map.removeLayer(marker); marker = null; }
+        routeLines.forEach(l => map.removeLayer(l));
+        routeLines = [];
+    }
+
+    // Search form
+    const searchForm = document.getElementById('search-form');
+    const searchBtn = document.getElementById('search-btn');
+
+    function quickSearch(loc) {
+        document.getElementById('location-input').value = loc;
+        searchForm.dispatchEvent(new Event('submit'));
+    }
+
+    searchForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const location = document.getElementById('location-input').value.trim();
+        if (!location) return;
+
+        searchBtn.disabled = true;
+        searchBtn.textContent = 'Searching...';
+
+        try {
+            const data = await apiCall('/api/search/traffic', {
+                method: 'POST',
+                body: JSON.stringify({ location })
+            });
+
+            displayResults(data);
+        } catch (err) {}
+
+        searchBtn.disabled = false;
+        searchBtn.textContent = 'Search Traffic';
+    });
+
+    function displayResults(data) {
+        document.getElementById('results-section').classList.remove('hidden');
+        _destLat = data.lat; _destLng = data.lng; _destName = data.location;
+
+        // Density display
+        const densityEl = document.getElementById('density-level');
+        const densityColors = { low: 'text-signal-green', medium: 'text-signal-amber', high: 'text-signal-red' };
+        densityEl.textContent = data.density.toUpperCase();
+        densityEl.className = `text-5xl font-extrabold mb-2 ${densityColors[data.density]}`;
+
+        document.getElementById('density-location').textContent = data.location;
+        document.getElementById('density-time').textContent = `${data.hour}:00`;
+        document.getElementById('density-day').textContent = data.day_of_week;
+        document.getElementById('density-coords').textContent = `${data.lat.toFixed(4)}, ${data.lng.toFixed(4)}`;
+
+        // Data source badge
+        const srcEl = document.getElementById('density-source');
+        if (data.data_source === 'real') {
+            srcEl.textContent = 'Real Detections';
+            srcEl.className = 'text-xs font-semibold text-signal-green';
+        } else {
+            srcEl.textContent = 'Time-based Estimate';
+            srcEl.className = 'text-xs font-semibold text-signal-amber';
+        }
+
+        // Real data stats
+        const statsEl = document.getElementById('real-data-stats');
+        if (data.real_data) {
+            statsEl.classList.remove('hidden');
+            document.getElementById('density-vehicles').textContent = data.real_data.avg_vehicles + ' avg';
+            document.getElementById('density-scans').textContent = data.real_data.detections_used + ' uploads';
+            document.getElementById('density-updated').textContent = data.real_data.last_updated
+                ? new Date(data.real_data.last_updated).toLocaleString() : '--';
+            const emEl = document.getElementById('density-emergency');
+            emEl.textContent = data.real_data.emergency_count > 0
+                ? `${data.real_data.emergency_count} detected` : 'None';
+            emEl.className = data.real_data.emergency_count > 0
+                ? 'text-xs font-semibold text-signal-red' : 'text-xs text-surface-200/50';
+        } else {
+            statsEl.classList.add('hidden');
+        }
+
+        // Suggestion
+        const suggEl = document.getElementById('suggestion-text');
+        suggEl.textContent = data.suggestion;
+
+        // Background color for density display
+        const densityDisplay = document.getElementById('density-display');
+        densityDisplay.className = `text-center py-6 rounded-xl bg-density-${data.density}`;
+
+        // Navigation handled by startNavigation()
+
+        // Map
+        initMap(data.lat, data.lng);
+        clearMap();
+
+        const markerColor = data.density === 'high' ? '#ef4444' : data.density === 'medium' ? '#f59e0b' : '#22c55e';
+        const icon = L.divIcon({
+            html: `<div style="width:20px;height:20px;background:${markerColor};border-radius:50%;border:3px solid white;box-shadow:0 0 12px ${markerColor}"></div>`,
+            iconSize: [20, 20],
+            className: ''
+        });
+        marker = L.marker([data.lat, data.lng], { icon }).addTo(map);
+        marker.bindPopup(`
+            <div style="min-width:180px">
+                <strong>${data.location}</strong><br>
+                <span style="color:${markerColor};font-weight:bold">Density: ${data.density.toUpperCase()}</span><br>
+                <small>${data.day_of_week} at ${data.hour}:00</small>
+            </div>
+        `).openPopup();
+
+        // Alternate routes — real ORS routing
+        drawRealRoutes(data);
+    }
+
+    const ORS_KEY = 'eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjQzMDZlYmQ1ZjFkYzQ2YjRhMGZlMzA3ODZhNWYxM2MzIiwiaCI6Im11cm11cjY0In0=';
+
+    async function fetchORSRoute(fromLat, fromLng, toLat, toLng) {
+        const res = await fetch('https://api.openrouteservice.org/v2/directions/driving-car/geojson', {
+            method: 'POST',
+            headers: { 'Authorization': ORS_KEY, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ coordinates: [[fromLng, fromLat], [toLng, toLat]] })
+        });
+        if (!res.ok) throw new Error('ORS error: ' + res.status);
+        return await res.json();
+    }
+
+    async function fetchORSRouteAlt(fromLat, fromLng, toLat, toLng) {
+        // Fetch alternate route using a slight bearing offset as intermediate point
+        const midLat = (fromLat + toLat) / 2 + 0.004;
+        const midLng = (fromLng + toLng) / 2 - 0.003;
+        const res = await fetch('https://api.openrouteservice.org/v2/directions/driving-car/geojson', {
+            method: 'POST',
+            headers: { 'Authorization': ORS_KEY, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ coordinates: [[fromLng, fromLat], [midLng, midLat], [toLng, toLat]] })
+        });
+        if (!res.ok) throw new Error('ORS alt error: ' + res.status);
+        return await res.json();
+    }
+
+    async function drawRealRoutes(data) {
+        const altContainer = document.getElementById('alt-routes');
+
+        // Known alternate roads for each Ongole main road
+        const ALT_ROAD_INFO = {
+            'trunk road':    { alt1: 'Mangamur Road',    alt2: 'Court Center Road' },
+            'mangamur road': { alt1: 'Trunk Road',       alt2: 'VIP Road' },
+            'kurnool road':  { alt1: 'Bhagya Nagar Road',alt2: 'VIP Road' },
+            'court center':  { alt1: 'Mangamur Road',    alt2: 'Station Road' },
+            'bhagya nagar':  { alt1: 'Kurnool Road',     alt2: 'Court Center Road' },
+            'station road':  { alt1: 'Court Center Road',alt2: 'Trunk Road' },
+            'highway 101':   { alt1: 'Mangamur Road',    alt2: 'Kurnool Road' },
+        };
+        const locKey = Object.keys(ALT_ROAD_INFO).find(k => data.location.toLowerCase().includes(k));
+        const roadInfo = locKey ? ALT_ROAD_INFO[locKey] : { alt1: 'Alternate Road 1', alt2: 'Alternate Road 2' };
+
+        if (data.density !== 'high') {
+            altContainer.innerHTML = `
+                <div class="text-center py-8">
+                    <div class="w-12 h-12 rounded-full bg-signal-green/10 flex items-center justify-center mx-auto mb-3">
+                        <svg class="w-6 h-6 text-signal-green" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    </div>
+                    <p class="text-sm text-signal-green font-medium mb-1">Traffic is clear!</p>
+                    <p class="text-xs text-surface-200/40">No alternate routes needed.</p>
+                </div>`;
+            return;
+        }
+
+        altContainer.innerHTML = '<p class="text-xs text-surface-200/40 text-center py-4">Getting your location for routes...</p>';
+
+        // Get user GPS location first
+        const getUserLocation = () => new Promise((resolve) => {
+            if (!navigator.geolocation) return resolve(null);
+            navigator.geolocation.getCurrentPosition(
+                p => resolve({ lat: p.coords.latitude, lng: p.coords.longitude }),
+                () => resolve(null),
+                { timeout: 5000 }
+            );
+        });
+
+        const userPos = await getUserLocation();
+        // Fall back to a nearby point if GPS denied
+        const fromLat = userPos ? userPos.lat : data.lat - 0.010;
+        const fromLng = userPos ? userPos.lng : data.lng - 0.008;
+        _userLat = fromLat; _userLng = fromLng;
+
+        altContainer.innerHTML = '<p class="text-xs text-surface-200/40 text-center py-4">Loading routes...</p>';
+
+        const routeColors = ['#748ffc', '#22c55e'];
+        const routeNames  = [roadInfo.alt1, roadInfo.alt2];
+        const routeResults = [];
+
+        // Draw user location marker
+        const userIcon = L.divIcon({
+            html: `<div style="width:16px;height:16px;background:#748ffc;border-radius:50%;border:3px solid white;box-shadow:0 0 10px #748ffc"></div>`,
+            iconSize: [16, 16], className: ''
+        });
+        const userMarker = L.marker([fromLat, fromLng], { icon: userIcon }).addTo(map);
+        userMarker.bindPopup('<strong>Your Location</strong>');
+        routeLines.push(userMarker);
+
+        // Route 1: direct fastest route
+        try {
+            const geojson = await fetchORSRoute(fromLat, fromLng, data.lat, data.lng);
+            const feature = geojson.features[0];
+            const props   = feature.properties.summary;
+            const distKm  = (props.distance / 1000).toFixed(1);
+            const etaMins = Math.round(props.duration / 60);
+            const coords  = feature.geometry.coordinates.map(c => [c[1], c[0]]);
+            const line = L.polyline(coords, { color: routeColors[0], weight: 5, opacity: 0.9 }).addTo(map);
+            routeLines.push(line);
+            routeResults.push({ name: routeNames[0], dist: distKm, eta: etaMins, color: routeColors[0] });
+        } catch (e) { console.warn('Route 1 error:', e); }
+
+        // Route 2: alternate route via offset midpoint
+        try {
+            const geojson = await fetchORSRouteAlt(fromLat, fromLng, data.lat, data.lng);
+            const feature = geojson.features[0];
+            const props   = feature.properties.summary;
+            const distKm  = (props.distance / 1000).toFixed(1);
+            const etaMins = Math.round(props.duration / 60);
+            const coords  = feature.geometry.coordinates.map(c => [c[1], c[0]]);
+            const line = L.polyline(coords, { color: routeColors[1], weight: 4, opacity: 0.75, dashArray: '8,6' }).addTo(map);
+            routeLines.push(line);
+            routeResults.push({ name: routeNames[1], dist: distKm, eta: etaMins, color: routeColors[1] });
+        } catch (e) { console.warn('Route 2 error:', e); }
+
+        if (routeResults.length) {
+            altContainer.innerHTML = `
+                <p class="text-xs text-signal-red/80 mb-3">⚠ Heavy traffic on ${data.location}. Consider:</p>
+            ` + routeResults.map((r, i) => `
+                <div class="p-3 rounded-lg bg-surface-900/50 border border-surface-800 mb-3">
+                    <div class="flex items-center justify-between mb-1">
+                        <div class="flex items-center gap-2">
+                            <div style="width:10px;height:10px;border-radius:50%;background:${r.color}"></div>
+                            <span class="text-sm font-medium text-white">via ${r.name}</span>
+                        </div>
+                        <span class="text-xs font-semibold ${i === 0 ? 'text-signal-green' : 'text-signal-amber'}">${i === 0 ? 'recommended' : 'alternate'}</span>
+                    </div>
+                    <div class="flex gap-4 text-xs text-surface-200/50 mt-1">
+                        <span>📍 ${r.dist} km</span>
+                        <span>⏱ ${r.eta} min</span>
+                    </div>
+                </div>
+            `).join('');
+
+            // Fit map to show full route
+            const allCoords = [[fromLat, fromLng], [data.lat, data.lng]];
+            map.fitBounds(allCoords, { padding: [60, 60] });
+        } else {
+            altContainer.innerHTML = '<p class="text-xs text-signal-red/60 text-center py-4">Could not load routes. Check connection.</p>';
+        }
+    }
+
+    // Invalidate map size after it becomes visible
+    setTimeout(() => { if (map) map.invalidateSize(); }, 300);
+</script>
+{% endblock %}
